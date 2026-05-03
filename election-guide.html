@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Civic Learner</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        /* CSS Reset & Material Variables */
+        :root {
+            --md-primary: #1a73e8;
+            --md-on-primary: #ffffff;
+            --md-accent: #fbbc04;
+            --md-bg: #f8f9fa;
+            --md-surface: #ffffff;
+            --md-text: #202124;
+            --md-text-secondary: #5f6368;
+            --md-border: #dadce0;
+            --md-success: #34a853;
+            --md-error: #ea4335;
+            --shadow-1: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            --shadow-2: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+            --radius: 16px;
+        }
+
+        [data-theme="dark"] {
+            --md-primary: #8ab4f8;
+            --md-on-primary: #202124;
+            --md-accent: #fdd663;
+            --md-bg: #202124;
+            --md-surface: #2d2e30;
+            --md-text: #e8eaed;
+            --md-text-secondary: #9aa0a6;
+            --md-border: #5f6368;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Google Sans', 'Roboto', Arial, sans-serif;
+            background: var(--md-bg);
+            color: var(--md-text);
+            overflow-x: hidden;
+            transition: background 0.3s, color 0.3s;
+            padding-bottom: 80px; /* Space for bottom nav */
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Material Ripple Effect */
+        .ripple {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        @keyframes ripple-anim {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        /* App Bar */
+        .app-bar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 64px;
+            background: var(--md-surface);
+            box-shadow: var(--shadow-1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+
+        .welcome-text {
+            font-weight: 500;
+            font-size: 1.1rem;
+        }
+
+        /* Civic Score Ring */
+        .score-container {
+            position: relative;
+            width: 48px;
+            height: 48px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .score-ring {
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+            width: 100%;
+            height: 100%;
+        }
+
+        .score-ring circle {
+            fill: transparent;
+            stroke-width: 4;
+        }
+
+        .score-ring .bg {
+            stroke: var(--md-border);
+        }
+
+        .score-ring .progress {
+            stroke: var(--md-primary);
+            stroke-dasharray: 125.6; /* 2 * pi * r (r=20) */
+            stroke-dashoffset: 125.6;
+            transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        .score-text {
+            position: absolute;
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: var(--md-primary);
+        }
+
+        /* Bottom Nav */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            height: 64px;
+            background: var(--md-surface);
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            display: none; /* hidden during onboarding */
+            justify-content: space-around;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--md-text-secondary);
+            cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.2s;
+            min-width: 70px;
+        }
+
+        .nav-item.active {
+            color: var(--md-primary);
+        }
+
+        .nav-item.active .material-icons {
+            background: rgba(26, 115, 232, 0.1);
+            border-radius: 16px;
+            padding: 4px 16px;
+        }
+
+        .nav-item span:last-child {
+            font-size: 0.75rem;
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        /* FAB */
+        .fab {
+            position: fixed;
+            bottom: 80px; right: 20px;
+            width: 56px; height: 56px;
+            border-radius: 50%;
+            background: var(--md-accent);
+            color: #000;
+            display: none; /* hidden during onboarding */
+            justify-content: center;
+            align-items: center;
+            box-shadow: var(--shadow-2);
+            cursor: pointer;
+            z-index: 999;
+            border: none;
+            transition: transform 0.2s;
+        }
+
+        .fab:hover {
+            transform: scale(1.05);
+        }
+
+        /* Layout */
+        main {
+            padding: 80px 16px 24px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Material Cards */
+        .card {
+            background: var(--md-surface);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow-1);
+            transition: box-shadow 0.3s;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-2);
+        }
+
+        .btn {
+            background: var(--md-primary);
+            color: var(--md-on-primary);
+            border: none;
+            border-radius: 24px;
+            padding: 12px 24px;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            box-shadow: var(--shadow-1);
+            transition: background 0.2s, opacity 0.2s;
+            margin-top: 12px;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: #1557b0;
+        }
+
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: default;
+        }
+
+        /* Onboarding */
+        .onboarding-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .ob-card {
+            text-align: center;
+            cursor: pointer;
+            padding: 24px;
+            border: 2px solid transparent;
+            user-select: none;
+        }
+
+        .ob-card.selected {
+            border-color: var(--md-primary);
+            background: rgba(26, 115, 232, 0.05);
+        }
+
+        .ob-emoji {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+        }
+
+        /* Learn Tab - Accordion */
+        .accordion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .accordion-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out, margin 0.3s ease-out;
+            margin-top: 0;
+            opacity: 0;
+        }
+
+        .accordion-body.open {
+            max-height: 800px; /* arbitrary max height */
+            margin-top: 16px;
+            opacity: 1;
+        }
+
+        .analogy-box {
+            background: rgba(251, 188, 4, 0.1);
+            padding: 16px;
+            border-radius: 12px;
+            margin: 16px 0;
+            border-left: 4px solid var(--md-accent);
+        }
+
+        /* Timeline Tab */
+        .timeline {
+            position: relative;
+            padding-left: 40px;
+            margin: 24px 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--md-border);
+            border-radius: 4px;
+        }
+
+        .timeline-node {
+            position: relative;
+            margin-bottom: 32px;
+            padding: 16px;
+            background: var(--md-surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-1);
+            cursor: pointer;
+        }
+
+        .timeline-icon {
+            position: absolute;
+            left: -56px;
+            top: 16px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--md-border);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            transition: all 0.3s;
+        }
+
+        .timeline-icon.pulse {
+            background: var(--md-primary);
+            animation: pulse 2s infinite;
+        }
+
+        .timeline-icon.visited {
+            background: var(--md-success);
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(26, 115, 232, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(26, 115, 232, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(26, 115, 232, 0); }
+        }
+
+        /* Quiz Tab */
+        .timer-bar-container {
+            width: 100%;
+            height: 6px;
+            background: var(--md-border);
+            border-radius: 3px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .timer-bar {
+            height: 100%;
+            background: var(--md-primary);
+            width: 100%;
+            transition: width 1s linear;
+        }
+
+        .quiz-option {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 16px;
+            margin-bottom: 12px;
+            background: var(--md-surface);
+            border: 2px solid var(--md-border);
+            border-radius: 12px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 1rem;
+            color: var(--md-text);
+            transition: all 0.2s;
+        }
+
+        .quiz-option:hover {
+            background: rgba(0,0,0,0.02);
+        }
+
+        .quiz-option.correct {
+            background: #e6f4ea;
+            border-color: var(--md-success);
+            color: #137333;
+            font-weight: 500;
+        }
+
+        .quiz-option.wrong {
+            background: #fce8e6;
+            border-color: var(--md-error);
+            color: #c5221f;
+        }
+
+        /* Glossary Tab */
+        .glossary-search {
+            width: 100%;
+            padding: 14px 20px;
+            font-size: 1rem;
+            border: 1px solid var(--md-border);
+            border-radius: 28px;
+            margin-bottom: 16px;
+            background: var(--md-surface);
+            color: var(--md-text);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .glossary-search:focus {
+            border-color: var(--md-primary);
+        }
+
+        .az-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .az-chip {
+            padding: 8px 14px;
+            border-radius: 20px;
+            background: var(--md-border);
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: var(--md-text);
+            transition: background 0.2s;
+            user-select: none;
+        }
+
+        .az-chip.active {
+            background: var(--md-primary);
+            color: var(--md-on-primary);
+        }
+
+        .flip-card {
+            background-color: transparent;
+            width: 100%;
+            height: 140px;
+            perspective: 1000px;
+            margin-bottom: 16px;
+        }
+
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+
+        .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: var(--md-surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-1);
+            padding: 20px;
+        }
+
+        .flip-card-front h3 {
+            margin: 0;
+            color: var(--md-primary);
+            font-size: 1.2rem;
+        }
+
+        .flip-card-back {
+            transform: rotateY(180deg);
+            background: rgba(26, 115, 232, 0.05);
+            border: 1px solid var(--md-primary);
+        }
+
+        .flip-card-back p {
+            margin: 0;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: var(--md-surface);
+            padding: 32px;
+            border-radius: 24px;
+            box-shadow: var(--shadow-2);
+            width: 90%;
+            max-width: 400px;
+            transform: translateY(30px);
+            transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            text-align: center;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+
+        /* Confetti */
+        #confetti-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Top App Bar -->
+    <header class="app-bar">
+        <div class="welcome-text">Welcome, Civic Learner 👋</div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <span class="material-icons ripple" style="cursor: pointer;" onclick="toggleDarkMode()">dark_mode</span>
+            <div class="score-container" onclick="showScoreModal()" title="View Civic Score Details">
+                <svg class="score-ring">
+                    <circle class="bg" cx="24" cy="24" r="20"></circle>
+                    <circle class="progress" id="scoreRing" cx="24" cy="24" r="20"></circle>
+                </svg>
+                <div class="score-text" id="scoreText">0</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main>
+        <!-- Onboarding Tab -->
+        <div id="tab-onboarding" class="tab-content active">
+            <div class="card" style="text-align: center; padding: 40px 20px;">
+                <h2 style="font-size: 1.8rem; margin-bottom: 8px;">Let's customize your guide.</h2>
+                <p style="color: var(--md-text-secondary);">Your journey to becoming an informed citizen starts here.</p>
+                
+                <div style="margin-top: 32px;">
+                    <h4 style="margin-bottom: 12px; text-align: left;">1. What brings you here?</h4>
+                    <div class="onboarding-grid" id="ob-type">
+                        <div class="card ob-card ripple" onclick="selectType(this, 'firstTime')">
+                            <div class="ob-emoji">🎒</div>
+                            <div style="font-weight: 500;">First-Time Voter</div>
+                        </div>
+                        <div class="card ob-card ripple" onclick="selectType(this, 'refresh')">
+                            <div class="ob-emoji">🔄</div>
+                            <div style="font-weight: 500;">Refresh Knowledge</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 32px; display: none;" id="ob-country-section">
+                    <h4 style="margin-bottom: 12px; text-align: left;">2. Which election process?</h4>
+                    <div class="onboarding-grid" id="ob-country" style="grid-template-columns: repeat(2, 1fr);">
+                        <div class="card ob-card ripple" onclick="selectCountry(this, 'USA')">🇺🇸<br><br>USA</div>
+                        <div class="card ob-card ripple" onclick="selectCountry(this, 'India')">🇮🇳<br><br>India</div>
+                        <div class="card ob-card ripple" onclick="selectCountry(this, 'UK')">🇬🇧<br><br>UK</div>
+                        <div class="card ob-card ripple" onclick="selectCountry(this, 'General')">🌍<br><br>General Demo</div>
+                    </div>
+                </div>
+                
+                <button class="btn ripple" id="ob-start-btn" style="margin-top: 32px; display: none; width: 100%; padding: 16px; font-size: 1.1rem;" onclick="startApp()">Start Learning</button>
+            </div>
+        </div>
+
+        <!-- Learn Tab -->
+        <div id="tab-learn" class="tab-content">
+            <div class="card" style="background: var(--md-primary); color: var(--md-on-primary);">
+                <h2 style="margin:0; font-size: 1.5rem;">Your Civic Journey</h2>
+                <p style="margin-top:8px; opacity:0.9;">Complete each step below to understand the process and earn your Civic Score.</p>
+            </div>
+            <div id="learnContainer"></div>
+        </div>
+
+        <!-- Timeline Tab -->
+        <div id="tab-timeline" class="tab-content">
+            <div class="card" style="margin-bottom: 8px;">
+                <h2 style="margin:0; color:var(--md-primary); font-size: 1.5rem;">Election Timeline</h2>
+                <p style="margin-top:8px; color:var(--md-text-secondary);">Scroll down and click nodes to explore the exact sequence of events.</p>
+            </div>
+            <div id="timelineContainer"></div>
+        </div>
+
+        <!-- Quiz Tab -->
+        <div id="tab-quiz" class="tab-content">
+            <div id="quizContainer"></div>
+        </div>
+
+        <!-- Glossary Tab -->
+        <div id="tab-glossary" class="tab-content">
+            <div class="card" style="position: sticky; top: 70px; z-index: 10;">
+                <h2 style="margin:0 0 16px 0; color:var(--md-primary); font-size: 1.5rem;">Election Glossary</h2>
+                <input type="text" id="glossarySearch" class="glossary-search" placeholder="🔍 Search terms (e.g., Ballot, Primary)..." autocomplete="off" oninput="searchGlossary(this.value)">
+                <div class="az-filter" id="azFilter"></div>
+            </div>
+            <div id="glossaryTermsContainer"></div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav" id="bottomNav">
+        <div class="nav-item active ripple" onclick="switchTab('learn', this)">
+            <span class="material-icons">school</span>
+            <span>Learn</span>
+        </div>
+        <div class="nav-item ripple" onclick="switchTab('timeline', this)">
+            <span class="material-icons">timeline</span>
+            <span>Timeline</span>
+        </div>
+        <div class="nav-item ripple" onclick="switchTab('quiz', this)">
+            <span class="material-icons">quiz</span>
+            <span>Quiz</span>
+        </div>
+        <div class="nav-item ripple" onclick="switchTab('glossary', this)">
+            <span class="material-icons">menu_book</span>
+            <span>Glossary</span>
+        </div>
+    </nav>
+
+    <!-- Floating Action Button -->
+    <button class="fab ripple" id="fabBtn" onclick="switchTab('quiz', document.querySelectorAll('.nav-item')[2])" title="Jump to Quiz">
+        <span class="material-icons">bolt</span>
+    </button>
+
+    <!-- Score Modal -->
+    <div class="modal-overlay" id="scoreModal" onclick="hideModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2 style="color: var(--md-primary); margin-top: 0;">My Civic Score</h2>
+            <div id="modalStats"></div>
+            <button class="btn ripple" style="width: 100%; margin-top: 24px;" onclick="hideModal(event)">Keep Learning</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // --- DATA ---
+        const appData = {
+            USA: {
+                stages: [
+                    { id: 'us1', title: 'Voter Registration', dates: 'Varies by State (15-30 days prior)', desc: 'The process of officially signing up to vote. This proves you are an eligible citizen and assigns you to the correct local voting location.', analogy: 'Think of it like buying a ticket before entering the stadium—you can\'t play without it.', checklist: ['Check your eligibility', 'Find your state\'s deadline', 'Register online or by mail'] },
+                    { id: 'us2', title: 'Primaries & Caucuses', dates: 'February to June', desc: 'Voters in each state choose which candidates will officially represent their political party in the final General Election.', analogy: 'Like team tryouts before the championship game.', checklist: ['Check if your state has an open or closed primary', 'Research the candidates within your preferred party'] },
+                    { id: 'us3', title: 'National Conventions', dates: 'July or August', desc: 'Political parties host massive events to officially announce their final presidential candidate and their running mate.', analogy: 'A massive pep rally announcing the team captain to the country.', checklist: ['Watch the acceptance speeches', 'Read the party platform (their list of goals)'] },
+                    { id: 'us4', title: 'General Election', dates: 'First Tuesday after first Monday in November', desc: 'The final, nationwide election. Citizens cast their official ballots for their chosen candidate.', analogy: 'The championship game!', checklist: ['Make a specific voting plan', 'Bring required ID', 'Cast your ballot'] },
+                    { id: 'us5', title: 'Electoral College & Certification', dates: 'December to January', desc: 'State representatives called "Electors" cast the official votes for President based on what the citizens in their state chose.', analogy: 'Like a point system in a video game where winning a state grants a set number of points.', checklist: ['Understand that the popular vote guides the Electoral College vote', 'Wait for Congress to certify the results'] }
+                ],
+                quiz: [
+                    { q: 'When is Election Day for national elections?', options: ['November 1st', 'First Tuesday after first Monday in Nov', 'July 4th', 'The first Monday in Nov'], a: 1, exp: 'By law, Election Day is set as the first Tuesday after the first Monday in November.' },
+                    { q: 'How many electoral votes are needed to win the Presidency?', options: ['270', '538', '100', '50'], a: 0, exp: 'A candidate needs a majority of the 538 electoral votes, which is exactly 270.' },
+                    { q: 'What is a primary election?', options: ['The final vote', 'The electoral vote', 'A party\'s tryouts for a candidate', 'Vote certification'], a: 2, exp: 'Primaries are like tryouts where political parties pick their final single candidate.' },
+                    { q: 'Who officially casts the deciding votes for the President?', options: ['Congress', 'The Popular Vote', 'The Electoral College', 'The Supreme Court'], a: 2, exp: 'While citizens vote to guide their state, the Electoral College formally casts the official votes.' },
+                    { q: 'When does the newly elected President take office (Inauguration Day)?', options: ['December 31st', 'January 1st', 'January 20th', 'March 4th'], a: 2, exp: 'The new president is officially inaugurated on January 20th following the election.' },
+                    { q: 'What is a "swing state"?', options: ['A state that always votes for the same party', 'A state where either candidate has a reasonable chance of winning', 'A state with no electoral votes', 'A state that doesn\'t allow voting'], a: 1, exp: 'Swing states are highly competitive because they don\'t consistently vote for just one political party.' },
+                    { q: 'What is the minimum voting age in the United States?', options: ['16', '18', '21', '25'], a: 1, exp: 'The 26th Amendment lowered the voting age from 21 to 18 in 1971.' },
+                    { q: 'How often are U.S. Presidential elections held?', options: ['Every 2 years', 'Every 4 years', 'Every 6 years', 'Every 8 years'], a: 1, exp: 'Presidential elections happen every 4 years, but Congressional elections happen every 2 years.' },
+                    { q: 'What is absentee voting?', options: ['Voting without registering', 'Voting by mail when you cannot go to the polling place', 'Having someone else vote for you', 'Voting after Election Day'], a: 1, exp: 'Absentee voting allows you to cast your ballot by mail if you are out of town or unable to vote in person.' },
+                    { q: 'Which constitutional amendment gave women the right to vote?', options: ['1st Amendment', '13th Amendment', '19th Amendment', '26th Amendment'], a: 2, exp: 'The 19th Amendment, ratified in 1920, granted women the right to vote nationwide.' }
+                ]
+            },
+            India: {
+                stages: [
+                    { id: 'in1', title: 'Voter Registration', dates: 'Rolling process (Cut-off before polls)', desc: 'Registering your name on the electoral roll to receive a Voter ID card (EPIC).', analogy: 'Getting your official ID badge for the world\'s largest democratic festival.', checklist: ['Apply via Form 6', 'Check your name on the Electoral Roll online'] },
+                    { id: 'in2', title: 'Nomination of Candidates', dates: 'A few weeks before polling', desc: 'Candidates file their nomination papers and disclose their assets and criminal records via affidavits.', analogy: 'Players officially submitting their names for the tournament.', checklist: ['Review candidate affidavits to know who you are voting for'] },
+                    { id: 'in3', title: 'Campaigning', dates: 'Ends 48 hours before polling begins', desc: 'Political parties release manifestos, hold massive rallies, and campaign across constituencies.', analogy: 'The big pitch where teams try to win over the audience.', checklist: ['Read party manifestos', 'Evaluate campaign promises objectively'] },
+                    { id: 'in4', title: 'Polling Day', dates: 'Usually in multiple phases (April-May)', desc: 'Citizens go to the booths and cast their votes using Electronic Voting Machines (EVMs).', analogy: 'Pressing the button to officially lock in your choice.', checklist: ['Bring your Voter ID / EPIC', 'Find your polling booth', 'Verify the VVPAT slip after voting'] },
+                    { id: 'in5', title: 'Counting & Results', dates: 'A single designated day after all phases end', desc: 'EVMs are unsealed under strict security and votes are counted to declare the winners.', analogy: 'The final scoreboard reveal for the entire country.', checklist: ['Watch results on the Election Commission website', 'Wait for the majority party to form the government'] }
+                ],
+                quiz: [
+                    { q: 'What machine is used to cast votes in modern Indian elections?', options: ['Paper Ballots', 'Electronic Voting Machine (EVM)', 'Punch Cards', 'Online Portal'], a: 1, exp: 'Electronic Voting Machines (EVMs) are used securely across India.' },
+                    { q: 'Which independent body is responsible for conducting elections in India?', options: ['The Supreme Court', 'The Parliament', 'The Election Commission of India (ECI)', 'The President'], a: 2, exp: 'The ECI is an autonomous constitutional authority that administers elections.' },
+                    { q: 'What does the VVPAT do?', options: ['It counts votes', 'It registers voters', 'It prints a paper slip verifying your EVM vote', 'It funds campaigns'], a: 2, exp: 'The Voter Verifiable Paper Audit Trail (VVPAT) lets you verify that your vote went to the right candidate.' },
+                    { q: 'What does the NOTA option on the ballot stand for?', options: ['None Of The Above', 'New Official Team Alliance', 'National Order of Trade', 'No Other Time Allowed'], a: 0, exp: 'NOTA allows voters to officially register their rejection of all contesting candidates.' },
+                    { q: 'How is the Prime Minister of India chosen?', options: ['Direct National Election', 'Electoral College', 'Elected leader of the majority party in Lok Sabha', 'Appointed by the Supreme Court'], a: 2, exp: 'The PM is the leader of the political party or coalition that wins a majority in the Lok Sabha (lower house).' },
+                    { q: 'What is the minimum age to vote in India?', options: ['16', '18', '21', '25'], a: 1, exp: 'The 61st Amendment lowered the voting age from 21 to 18 years in 1989.' },
+                    { q: 'What is an EPIC card?', options: ['An Electronic Payment Card', 'Elector\'s Photo Identity Card', 'An Election Pass for International Citizens', 'None of the above'], a: 1, exp: 'EPIC stands for Elector\'s Photo Identity Card, commonly known as a Voter ID card.' },
+                    { q: 'What happens during the "Model Code of Conduct"?', options: ['Parties can spend unlimited money', 'Guidelines are enforced to ensure fair campaigning', 'Elections are postponed', 'Only the ruling party can campaign'], a: 1, exp: 'The Model Code of Conduct is a set of guidelines issued by the ECI to regulate political parties and candidates.' },
+                    { q: 'How long does a typical Lok Sabha term last?', options: ['4 years', '5 years', '6 years', 'It is permanent'], a: 1, exp: 'The Lok Sabha (lower house of Parliament) has a term of 5 years unless dissolved earlier.' },
+                    { q: 'What is the purpose of "Indelible Ink"?', options: ['To sign documents', 'To mark the voter\'s finger to prevent double voting', 'To print the ballot papers', 'To highlight candidate names'], a: 1, exp: 'Indelible ink is applied to the voter\'s left forefinger to ensure they do not vote more than once.' }
+                ]
+            },
+            UK: {
+                stages: [
+                    { id: 'uk1', title: 'Voter Registration', dates: 'Up to 12 working days before the poll', desc: 'Signing up on the electoral register to be legally allowed to vote.', analogy: 'Getting your ticket to have a say in your local constituency.', checklist: ['Register online at gov.uk', 'Ensure you have an accepted form of Photo ID'] },
+                    { id: 'uk2', title: 'Dissolution of Parliament', dates: '25 working days before the poll', desc: 'The current Parliament is officially closed, and every seat in the House of Commons becomes vacant.', analogy: 'Clearing the board entirely for a brand new game.', checklist: ['Find out who is standing as a candidate in your local constituency'] },
+                    { id: 'uk3', title: 'Campaigning', dates: 'Lasts roughly 5 weeks', desc: 'Political parties publish their manifestos and candidates campaign locally to win the constituency seat.', analogy: 'Selling the vision and knocking on doors to win over the neighborhood.', checklist: ['Read party manifestos', 'Watch televised leadership debates'] },
+                    { id: 'uk4', title: 'Polling Day', dates: 'Usually held on a Thursday', desc: 'Voters go to local polling stations (like schools or village halls) to mark a cross (X) next to their chosen candidate on a paper ballot.', analogy: 'Taking your pencil and marking your cross to lock in your choice.', checklist: ['Bring accepted Photo ID to the polling station', 'Vote between 7am and 10pm'] },
+                    { id: 'uk5', title: 'Forming the Government', dates: 'The day after polling', desc: 'The party that wins the most seats (usually an absolute majority) has their leader invited by the Monarch to form a government and become Prime Minister.', analogy: 'Handing over the keys to Number 10 to the new winning captain.', checklist: ['Watch the leader travel to Buckingham Palace to meet the Monarch'] }
+                ],
+                quiz: [
+                    { q: 'On which day of the week are UK general elections traditionally held?', options: ['Monday', 'Tuesday', 'Thursday', 'Sunday'], a: 2, exp: 'By tradition, UK general elections are held on Thursdays.' },
+                    { q: 'What new requirement must voters bring to the polling station?', options: ['Passport only', 'Birth Certificate', 'An accepted form of Photo ID', 'Nothing'], a: 2, exp: 'Recent law changes require voters to show an accepted Photo ID at polling stations.' },
+                    { q: 'How many Members of Parliament (MPs) are elected to the House of Commons?', options: ['650', '500', '435', '100'], a: 0, exp: 'The UK is divided into 650 constituencies, so 650 MPs are elected.' },
+                    { q: 'Who officially invites the winning party leader to form a government?', options: ['The Outgoing Prime Minister', 'The Monarch', 'The Speaker of the House', 'The Supreme Court'], a: 1, exp: 'The Monarch officially invites the leader of the winning party to become Prime Minister.' },
+                    { q: 'What happens if no single party wins an absolute majority of seats?', options: ['Parliament is suspended', 'It results in a "Hung Parliament"', 'All MPs must resign immediately', 'The Monarch decides the winner'], a: 1, exp: 'A Hung Parliament occurs when no party wins a majority, usually leading to a coalition or minority government.' },
+                    { q: 'What is a constituency?', options: ['A political party', 'A geographical area represented by an MP', 'A type of ballot paper', 'A government building'], a: 1, exp: 'A constituency is a specific local area that elects one Member of Parliament.' },
+                    { q: 'What voting system is used for UK General Elections?', options: ['Proportional Representation', 'First Past The Post', 'Alternative Vote', 'Single Transferable Vote'], a: 1, exp: 'The UK uses First Past The Post, where the candidate with the most votes in each constituency wins the seat.' },
+                    { q: 'What does "Purdah" refer to in UK elections?', options: ['A type of ballot box', 'The pre-election period restricting government announcements', 'A special voting pencil', 'The winner\'s speech'], a: 1, exp: 'Purdah is the period before an election when civil servants and ministers cannot make announcements that could influence the vote.' },
+                    { q: 'At what age can you legally vote in a UK General Election?', options: ['16', '18', '21', '25'], a: 1, exp: 'The legal voting age for UK parliamentary elections is 18.' },
+                    { q: 'What is the maximum length of a UK Parliament?', options: ['4 years', '5 years', '6 years', '10 years'], a: 1, exp: 'By law, a Parliament can last no longer than 5 years before an election must be called.' }
+                ]
+            },
+            General: {
+                stages: [
+                    { id: 'g1', title: 'Voter Registration', dates: 'Weeks or months prior to election', desc: 'Adding your name to the official government list of eligible voters.', analogy: 'Signing up for a membership before you can use the gym.', checklist: ['Check your local eligibility rules', 'Register before the deadline'] },
+                    { id: 'g2', title: 'The Campaign Trail', dates: 'The months leading up to the vote', desc: 'Candidates travel, debate, and share their policy ideas to convince citizens to vote for them.', analogy: 'A prolonged job interview where the public is the boss.', checklist: ['Research the candidates', 'Look at their past voting records'] },
+                    { id: 'g3', title: 'Casting the Ballot', dates: 'Election Day', desc: 'Citizens securely indicate their choice either electronically, on paper, or by mail.', analogy: 'The moment you officially submit your answers on a test.', checklist: ['Find your polling place', 'Bring required documentation'] },
+                    { id: 'g4', title: 'Counting & Certification', dates: 'Days following the election', desc: 'Election officials carefully tally the votes, verify accuracy, and legally certify the results.', analogy: 'The referees reviewing the tape to ensure the final score is 100% accurate.', checklist: ['Wait patiently for official results', 'Trust verified news sources'] }
+                ],
+                quiz: [
+                    { q: 'What is a "ballot"?', options: ['A political debate', 'The mechanism (paper or digital) used to cast a vote', 'A law passed by congress', 'A type of government official'], a: 1, exp: 'A ballot is the actual form or screen you use to securely cast your vote.' },
+                    { q: 'What is the core definition of a "Democracy"?', options: ['Rule by a single king', 'A system of government elected by the whole population', 'Rule by the wealthy elites', 'A system with no laws'], a: 1, exp: 'Democracy fundamentally means rule by the people through elected representatives.' },
+                    { q: 'Why is voting considered an important civic duty?', options: ['You get free food', 'It is the primary way citizens shape the laws and government', 'It is a competitive sport', 'You get paid to do it'], a: 1, exp: 'Voting is how citizens hire the people who will write the laws that affect their daily lives.' },
+                    { q: 'In an election, what is an "incumbent"?', options: ['A brand new candidate', 'The person who currently holds the political office', 'An election judge', 'A first-time voter'], a: 1, exp: 'The incumbent is the current office holder who is usually running for re-election.' },
+                    { q: 'What is a political "manifesto" or "platform"?', options: ['A secret document', 'A party\'s public list of policies and promises', 'A type of ballot box', 'A polling station'], a: 1, exp: 'A manifesto or platform outlines exactly what the candidate plans to do if they win.' },
+                    { q: 'What does "turnout" mean in an election?', options: ['How many candidates are running', 'The percentage of eligible voters who actually cast a ballot', 'The time the polls open', 'The process of counting votes'], a: 1, exp: 'Turnout measures voter participation. High turnout usually means voters are highly engaged.' },
+                    { q: 'What is the purpose of an exit poll?', options: ['To block voters from leaving', 'To ask voters how they voted right after they leave the polling place', 'To count the final votes', 'To determine the location of the polling place'], a: 1, exp: 'Exit polls are surveys given to voters as they leave to help news organizations predict the outcome.' },
+                    { q: 'What does "gerrymandering" refer to?', options: ['Voting twice', 'Manipulating voting district boundaries to favor one party', 'Campaigning on television', 'A type of ballot machine'], a: 1, exp: 'Gerrymandering is drawing electoral maps to unfairly benefit one political group.' },
+                    { q: 'What is a "referendum"?', options: ['A direct vote by citizens on a specific law or policy', 'An election for a judge', 'The official counting process', 'A campaign rally'], a: 0, exp: 'A referendum allows citizens to vote directly on an issue rather than having elected officials decide.' },
+                    { q: 'What does "bipartisan" mean?', options: ['A party with no rules', 'Supported by two major political parties', 'A voter who doesn\'t vote', 'A split in the government'], a: 1, exp: 'Bipartisan refers to cooperation or agreement between two major political parties.' }
+                ]
+            }
+        };
+
+        const glossaryItems = [
+            { term: 'Absentee Ballot', def: 'A ballot completed and mailed in advance of an election by a voter who is unable to be present at the polls.' },
+            { term: 'Ballot', def: 'The actual paper form or digital screen used to securely select candidates.' },
+            { term: 'Caucus', def: 'A local meeting where members of a political party gather to discuss and select candidates.' },
+            { term: 'Constituency', def: 'A specific geographical area that is represented by a specific elected official.' },
+            { term: 'Democracy', def: 'A system of government elected by the whole eligible population.' },
+            { term: 'Electoral College', def: 'A system (used in the US) where states get electoral votes based on population to choose the President.' },
+            { term: 'Franchise / Suffrage', def: 'The legal right to vote in public elections.' },
+            { term: 'Gerrymandering', def: 'Manipulating the boundaries of an electoral constituency so as to favor one party or class.' },
+            { term: 'Hung Parliament', def: 'A situation in a parliamentary system where no single party wins an absolute majority of seats.' },
+            { term: 'Incumbent', def: 'The person currently holding an office who is running for re-election.' },
+            { term: 'Manifesto', def: 'A public declaration of policy and aims, especially one issued before an election by a political party.' },
+            { term: 'Nomination', def: 'The act of officially suggesting someone as a candidate in an election.' },
+            { term: 'Primary', def: 'An initial election to choose a political party\'s final candidates for the main election.' },
+            { term: 'Referendum', def: 'A general vote by the electorate on a single specific political question or law.' },
+            { term: 'Turnout', def: 'The percentage of eligible voters who actually cast a ballot in an election.' },
+            { term: 'Veto', def: 'A constitutional right to reject a decision or proposal made by a law-making body.' }
+        ];
+
+        // --- APP STATE ---
+        let selectedType = null;
+        let selectedCountry = null;
+        let score = 0;
+        let hasReached100 = false;
+        
+        let stats = {
+            steps: 0,
+            maxSteps: 0,
+            quiz: 0,
+            terms: 0
+        };
+
+        let completedSteps = new Set();
+        let visitedTimelineNodes = new Set();
+        let lookedUpTerms = new Set();
+
+        let currentQuizIdx = 0;
+        let timerInterval;
+        let quizScore = 0;
+        let quizQuestions = [];
+
+        // --- GLOBAL RIPPLE EFFECT ---
+        document.addEventListener('mousedown', function(e) {
+            const target = e.target.closest('.ripple');
+            if (!target) return;
+            
+            const rect = target.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const circle = document.createElement('span');
+            const diameter = Math.max(rect.width, rect.height);
+            
+            circle.style.width = circle.style.height = `${diameter}px`;
+            circle.style.left = `${x - diameter / 2}px`;
+            circle.style.top = `${y - diameter / 2}px`;
+            circle.style.position = 'absolute';
+            
+            // Adjust ripple color based on background
+            if (target.classList.contains('btn') || target.classList.contains('az-chip') && target.classList.contains('active')) {
+                circle.style.background = 'rgba(255, 255, 255, 0.4)';
+            } else {
+                circle.style.background = 'rgba(0, 0, 0, 0.1)';
+            }
+            
+            circle.style.borderRadius = '50%';
+            circle.style.transform = 'scale(0)';
+            circle.style.animation = 'ripple-anim 0.6s linear';
+            circle.style.pointerEvents = 'none';
+            
+            target.appendChild(circle);
+            setTimeout(() => circle.remove(), 600);
+        });
+
+        // --- SCORE SYSTEM ---
+        function addScore(points) {
+            score += points;
+            if (score > 100) score = 100;
+            
+            // Animate Ring
+            document.getElementById('scoreText').innerText = score;
+            const ring = document.getElementById('scoreRing');
+            const offset = 125.6 - (score / 100) * 125.6;
+            ring.style.strokeDashoffset = offset;
+            
+            // Trigger Confetti
+            if (score === 100 && !hasReached100) {
+                hasReached100 = true;
+                triggerConfetti();
+            }
+        }
+
+        function showScoreModal() {
+            const modal = document.getElementById('scoreModal');
+            
+            let badge = "Curious Citizen";
+            if (score >= 50) badge = "Informed Voter";
+            if (score === 100) badge = "Civic Champion 🏆";
+            
+            document.getElementById('modalStats').innerHTML = `
+                <h1 style="font-size: 3rem; margin: 16px 0; color: var(--md-accent);">${score}<span style="font-size:1.5rem; color:var(--md-text-secondary);">/100</span></h1>
+                <div style="font-size: 1.2rem; margin-bottom: 24px; font-weight: bold;">Badge Status: ${badge}</div>
+                <div style="text-align:left; background:rgba(0,0,0,0.03); padding:20px; border-radius:16px;">
+                    <p style="margin: 8px 0; font-size: 1.1rem;">📚 <strong>Steps Completed:</strong> ${stats.steps}/${stats.maxSteps}</p>
+                    <p style="margin: 8px 0; font-size: 1.1rem;">🎓 <strong>Quiz Answers:</strong> ${stats.quiz} correct</p>
+                    <p style="margin: 8px 0; font-size: 1.1rem;">📖 <strong>Terms Explored:</strong> ${stats.terms}</p>
+                </div>
+                <p style="margin-top:24px; color:var(--md-text-secondary); font-size: 0.95rem;">Interact with lessons, timeline, and glossary to reach 100!</p>
+            `;
+            
+            modal.classList.add('active');
+        }
+
+        function hideModal(e) {
+            document.getElementById('scoreModal').classList.remove('active');
+        }
+
+        // --- ONBOARDING ---
+        function selectType(el, type) {
+            document.querySelectorAll('#ob-type .ob-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedType = type;
+            document.getElementById('ob-country-section').style.display = 'block';
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        function selectCountry(el, country) {
+            document.querySelectorAll('#ob-country .ob-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedCountry = country;
+            document.getElementById('ob-start-btn').style.display = 'block';
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        function startApp() {
+            // Setup app based on selections
+            document.getElementById('tab-onboarding').classList.remove('active');
+            document.getElementById('bottomNav').style.display = 'flex';
+            document.getElementById('fabBtn').style.display = 'flex';
+            
+            loadLearnTab();
+            loadTimelineTab();
+            loadQuiz();
+            loadGlossary();
+            
+            // Switch to Learn tab
+            switchTab('learn', document.querySelectorAll('.nav-item')[0]);
+        }
+
+        function switchTab(tabId, navEl) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            navEl.classList.add('active');
+            
+            window.scrollTo(0, 0);
+        }
+
+        // --- LEARN TAB ---
+        function loadLearnTab() {
+            const stages = appData[selectedCountry].stages;
+            stats.maxSteps = stages.length;
+            const container = document.getElementById('learnContainer');
+            
+            container.innerHTML = stages.map((s, i) => `
+                <div class="card ripple" style="overflow:visible;" onclick="toggleAccordion(this, '${s.id}')">
+                    <div class="accordion-header">
+                        <h3 style="margin:0; font-size: 1.2rem;">${i+1}. ${s.title}</h3>
+                        <span class="material-icons" style="color:var(--md-primary);">expand_more</span>
+                    </div>
+                    <div class="accordion-body" onclick="event.stopPropagation()">
+                        <p style="margin-top:0;"><strong>What it is:</strong> ${s.desc}</p>
+                        <p><strong>📅 Key Dates:</strong> ${s.dates}</p>
+                        
+                        <div class="analogy-box">
+                            <strong style="color: #b08200;">💡 Think of it like...</strong><br>
+                            ${s.analogy}
+                        </div>
+                        
+                        <p><strong>✅ Action Checklist:</strong></p>
+                        <ul style="padding-left: 20px; margin-bottom: 20px; line-height: 1.8;">
+                            ${s.checklist.map(c => `<li>${c}</li>`).join('')}
+                        </ul>
+                        
+                        <button class="btn ripple" id="btn-${s.id}" style="width:100%;" onclick="completeStep('${s.id}')">Mark as Completed (+5 Score)</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleAccordion(cardEl, id) {
+            const body = cardEl.querySelector('.accordion-body');
+            const icon = cardEl.querySelector('.material-icons');
+            
+            // Close others (Accordion behavior)
+            document.querySelectorAll('.accordion-body.open').forEach(b => {
+                if (b !== body) {
+                    b.classList.remove('open');
+                    b.parentElement.querySelector('.material-icons').innerText = 'expand_more';
+                }
+            });
+
+            if (body.classList.contains('open')) {
+                body.classList.remove('open');
+                icon.innerText = 'expand_more';
+            } else {
+                body.classList.add('open');
+                icon.innerText = 'expand_less';
+            }
+        }
+
+        function completeStep(id) {
+            if (completedSteps.has(id)) return;
+            completedSteps.add(id);
+            stats.steps++;
+            addScore(5);
+            
+            const btn = document.getElementById(`btn-${id}`);
+            btn.innerText = 'Completed ✓';
+            btn.style.background = 'var(--md-success)';
+            btn.disabled = true;
+        }
+
+        // --- TIMELINE TAB ---
+        function loadTimelineTab() {
+            const stages = appData[selectedCountry].stages;
+            const container = document.getElementById('timelineContainer');
+            
+            container.innerHTML = `<div class="timeline">` + stages.map((s, i) => `
+                <div class="timeline-node ripple" onclick="visitTimelineNode(this, '${s.id}')">
+                    <div class="timeline-icon pulse" id="tl-icon-${s.id}">
+                        <span class="material-icons" style="font-size: 14px;">circle</span>
+                    </div>
+                    <h3 style="margin:0 0 8px 0; color:var(--md-primary);">${s.title}</h3>
+                    <p style="margin:0; font-size:0.95rem;">${s.desc}</p>
+                    <p style="margin:8px 0 0 0; color: var(--md-text-secondary); font-size:0.85rem; font-weight:bold;">🗓️ ${s.dates}</p>
+                </div>
+            `).join('') + `</div>`;
+        }
+
+        function visitTimelineNode(nodeEl, id) {
+            if (!visitedTimelineNodes.has(id)) {
+                visitedTimelineNodes.add(id);
+                const icon = document.getElementById(`tl-icon-${id}`);
+                icon.classList.remove('pulse');
+                icon.classList.add('visited');
+                icon.innerHTML = '<span class="material-icons" style="font-size: 20px;">check</span>';
+            }
+            // Smooth scroll adjustment for fixed app bar
+            const y = nodeEl.getBoundingClientRect().top + window.scrollY - 100;
+            window.scrollTo({top: y, behavior: 'smooth'});
+        }
+
+        // --- QUIZ TAB ---
+        function loadQuiz() {
+            quizQuestions = appData[selectedCountry].quiz;
+            currentQuizIdx = 0;
+            quizScore = 0;
+            showQuizQuestion();
+        }
+
+        function showQuizQuestion() {
+            if (currentQuizIdx >= quizQuestions.length) {
+                showQuizResults();
+                return;
+            }
+            
+            const q = quizQuestions[currentQuizIdx];
+            const container = document.getElementById('quizContainer');
+            
+            container.innerHTML = `
+                <div class="card" style="padding: 24px;">
+                    <div class="timer-bar-container">
+                        <div class="timer-bar" id="quizTimerBar"></div>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:24px; font-size: 0.95rem;">
+                        <span style="font-weight:bold; color:var(--md-primary);">Question ${currentQuizIdx+1} of ${quizQuestions.length}</span>
+                        <span id="quizTimerText" style="color:var(--md-error); font-weight:bold;">15s remaining</span>
+                    </div>
+                    <h2 style="margin-top:0; margin-bottom: 24px; line-height: 1.4;">${q.q}</h2>
+                    <div id="quizOptions">
+                        ${q.options.map((opt, i) => `
+                            <button class="quiz-option ripple" onclick="answerQuiz(${i}, this)">${opt}</button>
+                        `).join('')}
+                    </div>
+                    <div id="quizExp" style="display:none; margin-top:24px; padding:16px; background: rgba(26,115,232,0.05); border-radius:12px; border-left: 4px solid var(--md-primary);">
+                        <div id="quizExpContent" style="margin-bottom:16px;"></div>
+                        <button class="btn ripple" style="width:100%;" onclick="nextQuiz()">Next Question</button>
+                    </div>
+                </div>
+            `;
+            startQuizTimer();
+        }
+
+        function startQuizTimer() {
+            let timeLeft = 15;
+            const bar = document.getElementById('quizTimerBar');
+            const text = document.getElementById('quizTimerText');
+            
+            bar.style.width = '100%';
+            clearInterval(timerInterval);
+            
+            // Force reflow
+            void bar.offsetWidth;
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                text.innerText = `${timeLeft}s remaining`;
+                bar.style.width = (timeLeft / 15 * 100) + '%';
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    answerQuiz(-1, null); // Time's up
+                }
+            }, 1000);
+        }
+
+        function answerQuiz(selectedIdx, btnEl) {
+            clearInterval(timerInterval);
+            const q = quizQuestions[currentQuizIdx];
+            const options = document.getElementById('quizOptions').querySelectorAll('.quiz-option');
+            
+            options.forEach(b => {
+                b.disabled = true;
+                b.style.pointerEvents = 'none';
+            });
+            
+            const expBox = document.getElementById('quizExp');
+            const expContent = document.getElementById('quizExpContent');
+            
+            if (selectedIdx === q.a) {
+                if(btnEl) btnEl.classList.add('correct');
+                addScore(10);
+                stats.quiz++;
+                quizScore++;
+                expContent.innerHTML = `<strong style="color:var(--md-success); font-size:1.1rem;">✅ Correct! (+10 Score)</strong><br><br>${q.exp}`;
+            } else {
+                if(btnEl) btnEl.classList.add('wrong');
+                options[q.a].classList.add('correct');
+                let reason = selectedIdx === -1 ? "⏱️ Time's up!" : "❌ Not quite!";
+                expContent.innerHTML = `<strong style="color:var(--md-error); font-size:1.1rem;">${reason}</strong><br><br>The correct answer is highlighted above.<br>${q.exp}`;
+            }
+            expBox.style.display = 'block';
+        }
+
+        function nextQuiz() {
+            currentQuizIdx++;
+            showQuizQuestion();
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        function showQuizResults() {
+            const container = document.getElementById('quizContainer');
+            container.innerHTML = `
+                <div class="card" style="text-align:center; padding: 40px 20px;">
+                    <div style="font-size: 4rem; margin-bottom: 16px;">🎓</div>
+                    <h1 style="font-size:3.5rem; margin:0; color:var(--md-primary);">${quizScore}/${quizQuestions.length}</h1>
+                    <p style="font-size:1.2rem; color:var(--md-text-secondary); margin-bottom:32px;">Quiz Completed!</p>
+                    <button class="btn ripple" id="shareBtn" style="width:100%; margin-bottom:16px;" onclick="shareResults()">Share Result</button>
+                    <button class="btn ripple" style="width:100%; background:var(--md-surface); color:var(--md-primary); border:2px solid var(--md-primary); box-shadow:none;" onclick="loadQuiz()">Retry Quiz</button>
+                </div>
+            `;
+        }
+
+        function shareResults() {
+            const text = `I just scored ${quizScore}/${quizQuestions.length} on the ${selectedCountry} Election Quiz! My Civic Score is ${score}/100. Try the Civic Learner app!`;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('shareBtn');
+                btn.innerText = 'Copied to Clipboard!';
+                setTimeout(() => { btn.innerText = 'Share Result'; }, 2000);
+            }).catch(err => {
+                alert("Failed to copy text. Please try again.");
+            });
+        }
+
+        // --- GLOSSARY TAB ---
+        function loadGlossary() {
+            const azFilter = document.getElementById('azFilter');
+            const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+            
+            azFilter.innerHTML = `<div class="az-chip active ripple" onclick="filterGlossary('ALL', this)">ALL</div>` + 
+                letters.map(l => `<div class="az-chip ripple" onclick="filterGlossary('${l}', this)">${l}</div>`).join('');
+                
+            renderGlossaryTerms(glossaryItems);
+        }
+
+        function filterGlossary(letter, chipEl) {
+            document.querySelectorAll('.az-chip').forEach(c => c.classList.remove('active'));
+            chipEl.classList.add('active');
+            document.getElementById('glossarySearch').value = '';
+            
+            if (letter === 'ALL') {
+                renderGlossaryTerms(glossaryItems);
+            } else {
+                const filtered = glossaryItems.filter(item => item.term.toUpperCase().startsWith(letter));
+                renderGlossaryTerms(filtered);
+            }
+        }
+
+        function searchGlossary(query) {
+            document.querySelectorAll('.az-chip').forEach(c => c.classList.remove('active'));
+            document.querySelector('.az-chip').classList.add('active'); // default visual to ALL
+            
+            const q = query.toLowerCase();
+            const filtered = glossaryItems.filter(item => item.term.toLowerCase().includes(q) || item.def.toLowerCase().includes(q));
+            renderGlossaryTerms(filtered);
+        }
+
+        function renderGlossaryTerms(items) {
+            const container = document.getElementById('glossaryTermsContainer');
+            if (items.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:var(--md-text-secondary); padding: 40px;">No terms found.</p>';
+                return;
+            }
+            
+            container.innerHTML = items.map(item => `
+                <div class="flip-card" onclick="flipTerm(this, '${item.term}')">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front ripple">
+                            <h3>${item.term}</h3>
+                            <span class="material-icons" style="color:var(--md-text-secondary); margin-top:16px;">touch_app</span>
+                        </div>
+                        <div class="flip-card-back ripple">
+                            <p>${item.def}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function flipTerm(el, term) {
+            el.classList.toggle('flipped');
+            if (!lookedUpTerms.has(term)) {
+                lookedUpTerms.add(term);
+                stats.terms++;
+                addScore(1); // +1 point for exploring new terms
+            }
+        }
+
+        // --- DARK MODE ---
+        function toggleDarkMode() {
+            const body = document.body;
+            if (body.getAttribute('data-theme') === 'dark') {
+                body.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        // Initialize Theme
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.setAttribute('data-theme', 'dark');
+        }
+
+        // --- CONFETTI SYSTEM ---
+        function triggerConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            canvas.style.display = 'block';
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            let particles = [];
+            const colors = ['#1a73e8', '#fbbc04', '#34a853', '#ea4335'];
+            
+            for(let i = 0; i < 150; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    r: Math.random() * 6 + 2,
+                    d: Math.random() * 100,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    tilt: Math.floor(Math.random() * 10) - 10,
+                    tiltAngleInc: (Math.random() * 0.07) + 0.05,
+                    tiltAngle: 0
+                });
+            }
+            
+            let angle = 0;
+            let W = canvas.width;
+            let H = canvas.height;
+            
+            function draw() {
+                ctx.clearRect(0, 0, W, H);
+                for(let i = 0; i < particles.length; i++) {
+                    let p = particles[i];
+                    ctx.beginPath();
+                    ctx.lineWidth = p.r;
+                    ctx.strokeStyle = p.color;
+                    ctx.moveTo(p.x + p.tilt + p.r, p.y);
+                    ctx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r);
+                    ctx.stroke();
+                }
+                update();
+                
+                if(particles.some(p => p.y < H)) {
+                    requestAnimationFrame(draw);
+                } else {
+                    canvas.style.display = 'none';
+                }
+            }
+            
+            function update() {
+                angle += 0.01;
+                for(let i = 0; i < particles.length; i++) {
+                    let p = particles[i];
+                    p.tiltAngle += p.tiltAngleInc;
+                    p.y += (Math.cos(angle + p.d) + 1 + p.r / 2) / 2;
+                    p.x += Math.sin(angle);
+                    p.tilt = Math.sin(p.tiltAngle) * 15;
+                }
+            }
+            
+            draw();
+            setTimeout(showScoreModal, 1500); // Show modal after confetti starts
+        }
+    </script>
+</body>
+</html>
